@@ -26,10 +26,10 @@
     </div>
     <div class="form-group">
         <label>Type
-        <select th:field="${event.type}">
-            <option th:each="type : ${types}"
-                    th:value="${type}"
-                    th:text="${type.displayName}"
+        <select th:field="${event.category}">
+            <option th:each="category : ${categories}"
+                    th:value="${category.id}"
+                    th:text="${category.name}"
             ></option>
         </select>
         </label>
