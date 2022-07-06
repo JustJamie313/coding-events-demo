@@ -103,7 +103,7 @@
       - events
       - category
     - PersonRepository (extend CrudRepository)
-    - PersonCategoryRepository
+    - PersonCategoryRepository (extend CrudRepository)
     - PersonController
       - RequestMapping("person")
         - GetMapping: return "person/index"
