@@ -10,7 +10,7 @@ public abstract class AbstractEntity {
     @Id
     @GeneratedValue
     private int id;
-
+// this is a note
     public int getId() {
         return id;
     }
