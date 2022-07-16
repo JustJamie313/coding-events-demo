@@ -14,7 +14,12 @@ import org.springframework.validation.Errors;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
+
+import static java.util.Objects.isNull;
 
 /**
  * Created by Chris Bay
@@ -33,22 +38,146 @@ public class EventController {
     private TagRepository tagRepository;
 
     @GetMapping
-    public String displayEvents(@RequestParam(required = false) Integer categoryId, Model model) {
-
-        if (categoryId == null) {
+    public String displayEvents(@RequestParam(required = false) Integer categoryId, @RequestParam(required = false) Integer tagId, @RequestParam(required = false) List<Integer> tagIds, Model model) {
+        if(isNull(categoryId) && isNull(tagId) && isNull(tagIds)){
             model.addAttribute("title", "All Events");
             model.addAttribute("events", eventRepository.findAll());
-        } else {
+            model.addAttribute("tags",tagRepository.findAll());
+        } else if(isNull(categoryId) && !isNull(tagId)){
+            Optional<Tag> result = tagRepository.findById(tagId);
+            if(result.isEmpty()){
+                model.addAttribute("title","Invalid Tag ID: " + tagId);
+            } else {
+                Tag tag = result.get();
+                model.addAttribute("title","Events with tag: " + tag.getDisplayName());
+                model.addAttribute("events",tag.getEvents());
+                model.addAttribute("tags",tag);
+            }
+        } else if(isNull(categoryId) && !isNull(tagIds)){
+            List<Tag> tags = new ArrayList<>();
+            for(Integer eachTagId:tagIds){
+                tags.add(tagRepository.findById(eachTagId).get());
+            }
+            if(tags.isEmpty()){
+                model.addAttribute("title","Invalid Tag IDs: " + tagIds.toString());
+            } else {
+                List<Event> events = new ArrayList<>();
+                List<String> tagNames = new ArrayList<>();
+                List<Tag> allTags = new ArrayList<>();
+                for(Tag eachTag:tags){
+                    if(!tagNames.contains(eachTag.getDisplayName())){
+                        tagNames.add(eachTag.getDisplayName());
+                    }
+                    List<Event> eventsWithTag = eachTag.getEvents();
+                    for(Event eventWithTag:eventsWithTag){
+                        if(!events.contains(eventWithTag)){
+                            events.add(eventWithTag);
+                            for(Tag t:eventWithTag.getTags()){
+                                if(!allTags.contains(t)){
+                                    allTags.add(t);
+                                }
+                            }
+                        }
+                    }
+                }
+                model.addAttribute("title","Events containing one or more of the tags: "+tagNames.toString());
+                model.addAttribute("events",events);
+                model.addAttribute("tags",allTags);
+            }
+
+        } else if(!isNull(categoryId) && isNull(tagId) && isNull(tagIds)){
             Optional<EventCategory> result = eventCategoryRepository.findById(categoryId);
-            if (result.isEmpty()) {
-                model.addAttribute("title", "Invalid Category ID: " + categoryId);
+            List<Tag> tags = new ArrayList<>();
+            if(result.isEmpty()){
+                model.addAttribute("title","Invalid Category ID: " + categoryId);
             } else {
                 EventCategory category = result.get();
-                model.addAttribute("title", "Events in category: " + category.getName());
-                model.addAttribute("events", category.getEvents());
+                model.addAttribute("title","Events in category: " + category.getName());
+                model.addAttribute("categoryId",categoryId);
+                List<Event> events = category.getEvents();
+                model.addAttribute("events", events);
+                for(Event event:events){
+                    for(Tag tag:event.getTags()){
+                        if(!tags.contains(tag)){
+                            tags.add(tag);
+                        }
+                    }
+                }
+                model.addAttribute("tags",tags);
+            }
+        } else if(!isNull(categoryId) && !isNull(tagId)){
+            Optional<EventCategory> categoryResult = eventCategoryRepository.findById(categoryId);
+            if(categoryResult.isEmpty()){
+                model.addAttribute("title","Invalid Category ID: " + categoryId);
+            } else {
+                Optional<Tag> tagResult = tagRepository.findById(tagId);
+                if (tagResult.isEmpty()) {
+                    model.addAttribute("title", "Invalid Tag ID: " + tagId);
+                } else {
+                    EventCategory category = categoryResult.get();
+                    Tag tag = tagResult.get();
+                    List<Event> eventsInCategory = category.getEvents();
+                    List<Event> eventsInCategoryWithTag = new ArrayList<>();
+                    List<Tag> eventTags = new ArrayList<>();
+                    for(Event event : eventsInCategory){
+                        List<Tag> tags = event.getTags();
+                        for(Tag eachTag:tags){
+                            eventTags.add(eachTag);
+                            if(eachTag.getId()==tagId){
+                                eventsInCategoryWithTag.add(event);
+                            }
+                        }
+                    }
+                    model.addAttribute("title","Events in Category: " + category.getName() + " with Tag: " + tag.getDisplayName());
+                    model.addAttribute("categoryId",categoryId);
+                    model.addAttribute("events",eventsInCategoryWithTag);
+                    model.addAttribute("tags",eventTags);
+                }
+            }
+        } else if(!isNull(categoryId) && !isNull(tagIds)){
+            Optional<EventCategory> categoryResult = eventCategoryRepository.findById(categoryId);
+            if(categoryResult.isEmpty()){
+                model.addAttribute("title","Invalid Category ID: " + categoryId);
+            } else {
+                List<Tag> tags = new ArrayList<>();
+                for(Integer eachTagId:tagIds){
+                    tags.add(tagRepository.findById(eachTagId).get());
+                }
+                if(tags.isEmpty()){
+                    model.addAttribute("title","Invalid Tag IDs: " + tagIds.toString());
+                } else {
+                    EventCategory category = categoryResult.get();
+                    List<Event> eventsInCategory = category.getEvents();
+                    List<Event> eventsInCategoryWithTag = new ArrayList<>();
+                    List<String> tagNames = new ArrayList<>();
+                    List<Tag> allTags = new ArrayList<>();
+                    for(Event event:eventsInCategory){
+                        List<Tag> eventTags = event.getTags();
+                        for(Tag eachEventTag:eventTags){
+                            for(Tag eachSubmittedTag:tags){
+                                if(!tagNames.contains(eachSubmittedTag.getDisplayName())){
+                                    tagNames.add(eachSubmittedTag.getDisplayName());
+                                }
+                                if(eachEventTag.getId() == eachSubmittedTag.getId()){
+                                    if(!eventsInCategoryWithTag.contains(event)){
+                                        for(Tag t:event.getTags()){
+                                            if(!allTags.contains(t)){
+                                                allTags.add(t);
+                                            }
+                                        }
+                                        eventsInCategoryWithTag.add(event);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    model.addAttribute("title","Events in Category: " + category.getName() + " containing one or more of the Tags: " + tagNames.toString());
+                    model.addAttribute("events",eventsInCategoryWithTag);
+                    model.addAttribute("categoryId",categoryId);
+                    model.addAttribute("tags",allTags);
+                }
             }
         }
-
         return "events/index";
     }
 

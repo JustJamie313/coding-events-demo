@@ -11,6 +11,10 @@
         <td th:text="${event.id}"></td>
     </tr>
     <tr>
+        <th>Category</th>
+        <td><a th:href="'/events?categoryId=' + ${event.eventCategory.id}" th:text="${event.eventCategory.name}"></a></td>
+    </tr>
+    <tr>
         <th>Description</th>
         <td th:text="${event.eventDetails.description}"></td>
     </tr>
@@ -20,9 +24,7 @@
     </tr>
     <tr>
         <th>Tags</th>
-        <td>
-            <span th:each="tag : ${tags}" th:text="${tag.displayName} + ' '"></span>
-        </td>
+        <td><a th:each="tag:${event.tags}" th:href="${categoryId}?'/events?categoryId=' + ${categoryId} + '&tagId='+${tag.id}:'/events?tagId=' + ${tag.id}" th:text="${tag.name}+ ' '"></a></td>
     </tr>
 </table>
 

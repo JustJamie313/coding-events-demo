@@ -5,16 +5,35 @@
 
 <header th:replace="fragments :: header"></header>
 
-<table class="table table-striped">
-    <thead>
-    <tr>
-        <th>Event Name</th>
-    </tr>
-    </thead>
-    <tr th:each="event : ${events}">
-        <td><a th:href="'/events/detail?eventId=' + ${event.id}" th:text="${event.name}"></a></td>
-    </tr>
-</table>
+    <table class="table table-striped">
+        <thead>
+        <tr>
+            <th>Event Name</th>
+            <th>Category</th>
+            <th>Tags</th>
+        </tr>
+        </thead>
+        <tr th:each="event : ${events}">
+            <td><a th:href="'/events/detail?eventId=' + ${event.id}" th:text="${event.name}"></a></td>
+            <td><a th:href="'/events?categoryId=' + ${event.eventCategory.id}" th:text="${event.eventCategory.name}"></a></td>
+            <td>
+                <a th:each="tag:${event.tags}" th:href="${categoryId}?'/events?categoryId=' + ${categoryId} + '&tagId='+${tag.id}:'/events?tagId=' + ${tag.id}" th:text="${tag.displayName}+ ' '"></a>
+
+            </td>
+        </tr>
+    </table>
+<form th:if="${tags}" method="get">
+    <ul>
+        <li th:each="tag:${tags}">
+            <input th:name="tagIds" type="checkbox" th:value="${tag.id}" th:text="${tag.displayName}"/>
+        </li>
+    </ul>
+
+    <input th:if="${categoryId}" type="hidden" name="categoryId" th:value="${categoryId}"/>
+<!--    <input type="checkbox" th:each="tag:${tags}" th:field="*{tagIds}" th:text="${tag.displayName}" th:value="${tag.id}" name="tagIds">-->
+    <input type="submit" value="Search Checked Tags"/>
+</form>
+
 
 </body>
 </html>
